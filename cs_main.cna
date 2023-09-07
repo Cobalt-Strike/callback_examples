@@ -1,0 +1,86 @@
+# The cs_main.cna script will load all of the scripts within this project.
+# It is meant to be the only script loaded into the Cobalt Strike UI
+# and it's job is to include all of the .cna scripts in this project.
+# The list of .cna scripts is defined in the @scripts variable.
+
+# Setup Strict Mode to identify undeclared variables.
+debug(debug() | 4);
+
+# Declare global variables
+global('$cs_main_base_dir @scripts $script');
+
+# Set the base folder for the "cs_main" script
+$cs_main_base_dir = script_resource("");
+
+# Override the default script_resource function to support the
+# ability to use the 'include' functionality to load other
+# scripts.
+#
+# Notes:
+#    - The scalar $__INCLUDE__ is set to the name of the included file.
+#      This is set correctly when the script is loaded initially However,
+#      the value will be set to the last included script.  This will cause
+#      issues with generating full path names when included script use
+#      the script_resource() in a function.
+#
+#    - In order to resolve the above issue any included script that uses
+#      the script_resource function needs to define a unique global variable
+#      to set the base path directory for that script.  That variable would
+#      then be used as the 2nd optional parameter to this function to correctly
+#      set the base path dir to use when generating the full path name.
+#
+# Arguments
+#    $1 - relative path name to the script resource
+#    $2 - an optional argument to use for the base_path_dir
+#
+sub script_resource {
+   # Declare local variables
+   local('$rel_path_name $base_path_dir');
+
+   # Assign parameters user friendly names
+   ($rel_path_name, $base_path_dir) = @_;
+
+   # Debug statements
+   #println("cs_main_base_dir: $cs_main_base_dir");
+   #println("INCLUDE:          $__INCLUDE__");
+   #println("rel_path_name:    $rel_path_name");
+   #println("base_path_dir:    $base_path_dir\n");
+
+   # Determine which full path to return for the requested script resource
+   if ($base_path_dir ne "") {
+      return getFileProper($base_path_dir, $rel_path_name);
+   }
+   else if ($__INCLUDE__ eq "") {
+      return getFileProper($cs_main_base_dir, $rel_path_name);
+   }
+   else {
+      return getFileProper(getFileParent($__INCLUDE__), $rel_path_name);
+   }
+}
+
+# Define all of the scripts that should be loaded by the cs_main
+@scripts = @(
+   "bnet/cs_get_domain.cna",
+   "bnet/cs_get_admin_user_info.cna",
+   "bof/cs_bof_callback_test.cna",
+   "dllspawn/example_dll/cs_example_dll.cna",
+   "execute_assembly/example_ea/cs_example_ea.cna",
+   "hashdump/cs_get_hashes.cna",
+   "mimikatz/export_certificates/cs_export_certificates.cna",
+   "mimikatz/logon_passwords/cs_logon_passwd_elevate.cna",
+   "mimikatz/coffee/cs_coffee.cna",
+   "portscan/cs_portscan.cna",
+   "powershell/psinject/cs_get_services_inject.cna",
+   "powershell/cs_powershell_clear.cna",
+   "powershell/bpowershell/cs_get_services_shell.cna",
+   "powershell/bpowerpick/cs_get_services_pick.cna"
+);
+
+# Include the set of scripts
+foreach $script (@scripts) {
+   # Already know the components of the path so build it this way.
+   include($cs_main_base_dir . "/" . $script);
+
+   # Could also use the script_resource function to do the same thing.
+   # include(script_resource($script, $cs_main_base_dir));
+}

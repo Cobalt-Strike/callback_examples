@@ -1,0 +1,16 @@
+
+beacon_command_register(
+   "cs_powershell_clear",
+   "Clear the imported PowerShell script from a Beacon session.",
+
+   "Clear the imported PowerShell script from a Beacon session.\n\n" .
+
+   "Usage: \n" .
+   "   cs_powershell_clear\n\n" .
+
+   "Arguments:\n" .
+   "   \$1 - beacon id (CS automatically adds this argument)\n\n");
+
+alias cs_powershell_clear {
+   bpowershell_import_clear($1);
+}

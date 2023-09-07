@@ -1,0 +1,98 @@
+
+# Filter the returned list of Windows services and only report
+# on the services that are 'Running'.
+#
+# Arguments
+# $1 - beacon id
+# $2 - result - output of the 'Get-Service' powershell cmdlet
+# $3 - info - Map containing information about the result
+#
+sub filter_running_services_shell {
+   # Declare local variables
+   local('$bid $result %info $output @lines $line');
+
+   # Assign parameters user friendly names
+   ($bid, $result, %info) = @_;
+   #println("**** arg1 (bid): $bid");
+   #print("**** arg2 (result): $result");
+   #println("**** arg3 (info): " . %info);
+
+   # Process the result
+   $output = "";
+   @lines = split('\n', $result);
+   foreach $line (@lines) {
+      #println("check line: $line");
+      if (substr($line, 0, 8) eq "Running ") {
+         $output .= "$line\n";
+      }
+   }
+
+   # Log the output back to beacon console
+   blog($bid, "received output:\n" . $output);
+}
+
+beacon_command_register(
+   "cs_get_services_shell",
+   "Run the powershell cmdlet Get-Service and filter on Running using bpowershell",
+
+   "Run the powershell cmdlet Get-Service and filter on Running using bpowershell\n\n" .
+
+   "Usage:\n" .
+   "   cs_get_services_shell [options]\n\n" .
+
+   "Arguments:\n" .
+   "   \$1 - beacon id (CS automatically adds this argument)\n\n" .
+
+   "Options:\n" .
+   "   --cradle <cradle> - specify a download cradle\n\n" .
+
+   "If the --cradle option is not used then the current imported powershell\n" .
+   "script will be used.  If the --cradle option is specified then the current\n" .
+   "imported powershell script is ignored and this argument is treated as the\n" .
+   "download cradle to prepend to the command. Most likely this will contain\n" .
+   "spaces and you will need to double quote the value.  For example:\n" .
+   "   cs_get_services_shell --cradle \"your download cradle with spaces\"\n" .
+   "For no download cradle use --cradle \"\"\n\n" .
+
+   "Examples:\n" .
+   "   cs_get_services_shell\n" .
+   "   cs_get_services_shell --cradle \"\"\n\n"
+);
+
+alias cs_get_services_shell {
+   # Declare local variables
+   local('$bid @valid_opts %opts $opt_cnt $opt_ind $opt $value $info');
+
+   # Assign parameters to the opts hash map
+   $bid = @_[0];
+   $opt_cnt = size(@_);
+   @valid_opts = @("--cradle");
+   for($opt_ind = 1; $opt_ind < $opt_cnt; $opt_ind++) {
+      # Set the arg and value for this iteration
+      $opt = @_[$opt_ind];
+      $opt_ind++;
+      $value = iff( $opt_ind >= $opt_cnt, $null, @_[$opt_ind] );
+
+      # Do some simple validation on opt and value
+      if ($opt !in @valid_opts) {
+         berror($bid, "$opt is not a valid option.");
+         return;
+      }
+      if ($value is $null || $value in @valid_opts) {
+         berror($bid, "Missing or invalid value for the $opt option.");
+         return;
+      }
+
+      # Save the opt and value into the opts hash
+      %opts[$opt] = $value;
+   }
+
+   # Print some info to the script console
+   $info = "beacon: $bid will execute a Get-Service" .
+           " cradle: " . iff(%opts["--cradle"] is $null, "\$null", "\'" . %opts["--cradle"] . "\'");
+   println("$info");
+
+   # Execute the
+   bpowershell($bid, "Get-Service", %opts["--cradle"], &filter_running_services_shell);
+   #bpowershell($bid, "Get-Service", %opts["--cradle"], { filter_running_services_shell($1, $2, $3); });
+}

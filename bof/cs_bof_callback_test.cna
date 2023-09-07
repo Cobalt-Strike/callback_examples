@@ -1,0 +1,178 @@
+# Declare global variables
+global('$cs_bof_callback_base_dir');
+
+# Set the base folder for the "cs_bof_callback_test" script
+$cs_bof_callback_base_dir = script_resource("");
+
+# Process the result from the BOF callback test
+#
+# Arguments
+# $1 - beacon id
+# $2 - result - output of the BOF callback test
+# $3 - info - Map containing information about the result
+#
+sub bof_cb {
+   # Declare local variables
+   local('$bid $result %info');
+
+   # Assign parameters user friendly names
+   ($bid, $result, %info) = @_;
+   #println("**** bof_cb");
+   #println("**** arg1 (bid): $bid");
+   #print("**** arg2 (result): $result");
+   #println("**** arg3 (info): " . %info);
+
+   # Log the output back to beacon console
+   if ("error" eq %info["type"]) {
+      berror($bid, "bof_cb " . $result);
+   } else {
+      blog($bid, "received output:\n" . "bof_cb " . $result);
+      #blog2($bid, "received output:\n" . "bof_cb " . $result);
+   }
+
+   #println("**** bof_cb done\n");
+}
+
+
+# Execute the BOF tests using beacon_inline_execute aggressor function
+#
+# Arguments
+# $1 - beacon id
+# $2 - test case number
+#
+sub beacon_inline_execute_callback_test {
+   # Declare local variables
+   local('$bid $test_num $barch $file $handle $data $args');
+
+   # Assign parameters user friendly names
+   ($bid, $test_num) = @_;
+
+   # Figure out the arch of this session
+   $barch  = barch($bid);
+
+   # Read in the right BOF file
+   $file   = script_resource("beacon_inline_execute/bof_callback. $+ $barch $+ .o", $cs_bof_callback_base_dir);
+   $handle = openf($file);
+   $data   = readb($handle, -1);
+   closef($handle);
+
+   # Pack our arguments
+   $args   = bof_pack($1, "i", $test_num);
+
+   # Announce what we're doing
+   btask($1, "Running beacon_inline_execute BOF callback test");
+
+
+   # Print some info to the script console
+   println("beacon: $bid will execute beacon_inline_execute for test_num: $test_num using BOF: $file");
+
+   # Execute the command
+   beacon_inline_execute($bid, $data, "go", $args, &bof_cb);
+   # beacon_inline_execute($bid, $data, "go", $args, { bof_cb($1, $2, $3); });
+   # beacon_inline_execute($bid, $data, "go", $args, { add($3, "foo" => "bar"); bof_cb($1, $2, $3); });
+}
+
+# Execute the BOF tests using binline_execute aggressor function
+#
+# Arguments
+# $1 - beacon id
+# $2 - test case number
+#
+sub binline_execute_callback_test {
+   # Declare local variables
+   local('$bid $test_num $barch $handle $file');
+
+   # Assign parameters user friendly names
+   ($bid, $test_num) = @_;
+
+   # Figure out the arch of this session
+   $barch  = barch($bid);
+
+   # get the right BOF file
+   $file = script_resource("binline_execute/bof_callback. $+ $barch $+ .o", $cs_bof_callback_base_dir);
+
+   # Announce what we're doing
+   btask($1, "Running binline_execute BOF callback test");
+
+   # Print some info to the script console
+   println("beacon: $bid will execute binline_execute for test_num: $test_num using BOF: $file");
+
+   # Execute the command
+   binline_execute($bid, $file, $test_num, &bof_cb);
+   # binline_execute($bid, $file, $test_num, { bof_cb($1, $2, $3); });
+   # binline_execute($bid, $file, $test_num, { add($3, "foo" => "bar"); bof_cb($1, $2, $3); });
+}
+
+
+beacon_command_register(
+   "cs_bof_callback_test",
+   "Used to test the callback function for the BOF aggressor script functions",
+
+   "Used to test the callback function for the BOF aggressor script functions\n\n" .
+
+   "Usage:\n" .
+   "   cs_bof_callback_test [options]\n\n" .
+
+   "Arguments:\n" .
+   "   \$1 - beacon id (CS automatically adds this argument)\n\n" .
+
+   "Options (specified in any order):\n" .
+   "   --use <bof_function>        - specify which BOF aggressor script function to use\n" .
+   "                                 valid functions: beacon_inline_execute, binline_execute\n" .
+   "   --test <test_num>           - specify test case number. valid test number: 1 - 6\n\n" .
+
+   "Examples:\n" .
+   "   cs_bof_callback_test\n" .
+   "   cs_bof_callback_test --use beacon_inline_execute --test 1\n" .
+   "   cs_bof_callback_test --use binline_execute --test 6\n\n"
+);
+
+alias cs_bof_callback_test {
+   # Declare local variables
+   local('$bid @valid_opts %opts $opt_cnt $opt_ind $opt $value $info');
+
+   # Set the defaults
+   %opts["--use"] = "beacon_inline_execute";
+   %opts["--test"] = 1;
+
+   # Assign parameters to the opts hash map
+   $bid = @_[0];
+   $opt_cnt = size(@_);
+   @valid_opts = @("--use", "--test");
+   for($opt_ind = 1; $opt_ind < $opt_cnt; $opt_ind++) {
+      # Set the arg and value for this iteration
+      $opt = @_[$opt_ind];
+      $opt_ind++;
+      $value = iff( $opt_ind >= $opt_cnt, $null, @_[$opt_ind] );
+
+      # Do some simple validation on opt and value
+      if ($opt !in @valid_opts) {
+         berror($bid, "$opt is not a valid option.");
+         return;
+      }
+      if ($value is $null || $value in @valid_opts) {
+         berror($bid, "Missing or invalid value for the $opt option.");
+         return;
+      }
+
+      # Save the opt and value into the opts hash
+      %opts[$opt] = $value;
+   }
+
+   # Validate options
+   if (%opts["--use"] !in @("beacon_inline_execute", "binline_execute")) {
+      berror($bid, "use method is not valid: " . %opts["--use"]);
+      return;
+   }
+   if (%opts["--test"] < 1 || %opts["--test"] > 6) {
+      berror($bid, "test number is not valid: " . %opts["--test"]);
+      return;
+   }
+
+   if (%opts["--use"] eq "beacon_inline_execute") {
+      beacon_inline_execute_callback_test($bid, %opts["--test"]);
+   } else {
+      binline_execute_callback_test($bid, %opts["--test"]);
+   }
+}
+

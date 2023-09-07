@@ -1,0 +1,121 @@
+# Declare global variables
+global('$cs_example_dll_base_dir');
+
+# Set the base folder for the "cs_example_dll" script
+$cs_example_dll_base_dir = script_resource("");
+
+# Process the result from the example_dll.dll and format the output.
+#
+# Arguments
+# $1 - beacon id
+# $2 - result
+# $3 - info - Map containing information about the result
+#
+sub example_dll_cb {
+   # Declare local variables
+   local('$bid $result %info @lines $line $name');
+
+   # Assign parameters user friendly names
+   ($bid, $result, %info) = @_;
+   #println("**** example_dll_cb");
+   #println("**** arg1 (bid): $bid");
+   #print("**** arg2 (result): $result");
+   println("**** arg3 (info): " . %info);
+
+   # Do what ever processing needed on $result
+   @lines = split('\r\n', $2);
+   foreach $line (@lines) {
+      if ("d:" eq substr($line, 0, 2)) {
+         $name = substr($line, 2);
+         blog($1, "received output:\n" . $name . ", It is nice to meet you\n");
+      }
+      else if ("done" eq $line) {
+         blog($1, "received output:\ngoodbye everyone\n");
+      }
+      else {
+         # Log the output back to beacon console
+         blog($1, "received output:\n" . $line . "\n");
+      }
+   }
+
+   #println("**** example_dll_cb done");
+}
+
+beacon_command_register(
+   "cs_example_dll",
+   "Run the example_dll",
+
+   "Run the example_dll\n\n" .
+
+   "Usage:\n" .
+   "   cs_example_dll [options]\n\n" .
+
+   "Arguments:\n" .
+   "   \$1 - beacon id (CS automatically adds this argument)\n" .
+   "   --args <args>       -specify the arguments to the cs_example_dll process as a string\n\n" .
+
+   "Options (specified in any order):\n" .
+   "   --format [yes|no]   - do additional formatting of output. Default is yes\n\n" .
+
+   "Examples:\n" .
+   "   cs_example_dll --args \"Han Luke Leia\"\n" .
+   "   cs_example_dll --args \"Han Luke Leia\" --format no\n\n"
+);
+
+alias cs_example_dll {
+   # Declare local variables
+   local('$bid @valid_opts %opts $opt_cnt $opt_ind $opt $value $info');
+
+   # Set the defaults
+   %opts["--format"] = "yes";
+
+   # Assign parameters to the opts hash map
+   $bid = @_[0];
+   $opt_cnt = size(@_);
+   @valid_opts = @("--args", "--format");
+   for($opt_ind = 1; $opt_ind < $opt_cnt; $opt_ind++) {
+      # Set the arg and value for this iteration
+      $opt = @_[$opt_ind];
+      $opt_ind++;
+      $value = iff( $opt_ind >= $opt_cnt, $null, @_[$opt_ind] );
+
+      # Do some simple validation on opt and value
+      if ($opt !in @valid_opts) {
+         berror($bid, "$opt is not a valid option.");
+         return;
+      }
+      if ($value is $null || $value in @valid_opts) {
+         berror($bid, "Missing or invalid value for the $opt option.");
+         return;
+      }
+
+      # Save the opt and value into the opts hash
+      %opts[$opt] = $value;
+   }
+
+   # Validate options
+   if (%opts["--args"] eq "") {
+      berror($bid, "Required option --args was not specified");
+      return;
+   }
+   if (%opts["--format"] !in @("yes", "no")) {
+      berror($bid, "format option is not valid: " . %opts["--format"]);
+      return;
+   }
+
+   # Figure out which version of the dll to use
+   %opts["--dll"] = script_resource("example_dll." . barch($bid) . ".dll", $cs_example_dll_base_dir);
+
+   # Print some info to the script console
+   $info = "beacon: $bid will execute the " . %opts["--dll"];
+
+   # Execute the command
+   if (%opts["--format"] eq "yes") {
+      println("$info with additional formatting");
+      bdllspawn($bid, %opts["--dll"], %opts["--args"], "example_dll", 5000, false, &example_dll_cb);
+      #bdllspawn($bid, %opts["--dll"], %opts["--args"], "example_dll", 5000, false, { example_dll_cb($1, $2, $3); });
+   } else {
+      println("$info with no additional formatting");
+      bdllspawn($bid, %opts["--dll"], %opts["--args"], "example_dll", 5000, false);
+   }
+}
