@@ -81,7 +81,7 @@ request in the queue.  A request is removed when these two conditions occur.
 
 The first condition is when the originating client disconnects from the teamserver.
 When this happens the queue managed by the client is removed as the queue is per
-team server connection.  The queue on the teamserver will see the originating
+teamserver connection.  The queue on the teamserver will see the originating
 client has disconnected and flag any requests for that client to be removed.
 This means the originating client needs to stay connected to the teamserver
 until the command with a callback has completed.  Otherwise, any responses from
