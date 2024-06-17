@@ -49,7 +49,7 @@ sub checkDownload {
 #
 sub get_certificates {
    # Declare local variables
-   local('$bid $result %info $pattern @lines $line $type $file');
+   local('$bid $result %info $pattern @lines $line $type $file $jid');
 
    # Assign parameters user friendly names
    ($bid, $result, %info) = @_;
@@ -58,23 +58,29 @@ sub get_certificates {
    #println("**** arg2 (rest of output):\n$2");
    #println("**** arg3 (info): " . %info);
 
-   # Log the output back to beacon console
-   blog($bid, "received output:\n" . $result);
+   # Process only output and error events
+   if ("output" eq %info["type"]) {
+      # Log the output back to beacon console
+      bjoblog($bid, $jid, "received output:\n" . $result);
 
-   # Search for files to download (example)
-   #    Public export  : OK - '<file>.der'
-   #    Private export : OK - '<file>.pfx'
-   $pattern = '\s*(Public|Private) export\s*: OK - \'(.*)\'';
-   @lines = split('\n', $2);
-   foreach $line (@lines) {
-      #println("check line: " . $line);
-      if ($line ismatch $pattern) {
-         ($type, $file) = matched();
-         add(@remove_file_on_complete, @($bid, $file));
-         #println("Added file to remove_file_on_complete: " . @remove_file_on_complete);
-         #println("Download the file: " . $file);
-         bdownload($bid, $file); # task beacon to download file
+      # Search for files to download (example)
+      #    Public export  : OK - '<file>.der'
+      #    Private export : OK - '<file>.pfx'
+      $pattern = '\s*(Public|Private) export\s*: OK - \'(.*)\'';
+      @lines = split('\n', $2);
+      foreach $line (@lines) {
+         #println("check line: " . $line);
+         if ($line ismatch $pattern) {
+            ($type, $file) = matched();
+            add(@remove_file_on_complete, @($bid, $file));
+            #println("Added file to remove_file_on_complete: " . @remove_file_on_complete);
+            #println("Download the file: " . $file);
+            bdownload($bid, $file); # task beacon to download file
+         }
       }
+   }
+   else if ("error" eq %info["type"]) {
+      bjoberror($bid, $jid, $result);
    }
 
    #println("**** get_certificates done");

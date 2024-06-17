@@ -9,26 +9,33 @@
 #
 sub filter_running_services_pick {
    # Declare local variables
-   local('$bid $result %info $output @lines $line');
+   local('$bid $result %info $output @lines $line $jid');
 
    # Assign parameters user friendly names
    ($bid, $result, %info) = @_;
+   $jid = %info['jid'];
    #println("**** arg1 (bid): $bid");
    #print("**** arg2 (result): $result");
    #println("**** arg3 (info): " . %info);
 
-   # Process the result
-   $output = "";
-   @lines = split('\n', $result);
-   foreach $line (@lines) {
-      #println("check line: $line");
-      if (substr($line, 0, 8) eq "Running ") {
-         $output .= "$line\n";
+   # Process only output and error events
+   if ("output" eq %info["type"]) {
+      # Process the result
+      $output = "";
+      @lines = split('\n', $result);
+      foreach $line (@lines) {
+         #println("check line: $line");
+         if (substr($line, 0, 8) eq "Running ") {
+            $output .= "$line\n";
+         }
       }
-   }
 
-   # Log the output back to beacon console
-   blog($bid, "received output:\n" . $output);
+      # Log the output back to beacon console
+      bjoblog($bid, $jid, "received output:\n" . $output);
+   }
+   else if ("error" eq %info["type"]) {
+      bjoberror($bid, $jid, $result);
+   }
 }
 
 beacon_command_register(

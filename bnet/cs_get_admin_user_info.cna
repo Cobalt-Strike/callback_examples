@@ -23,7 +23,12 @@ sub get_admin_user_info_cb {
 
    # Check to see if the result is an error
    if ("error" eq %info["type"]) {
-      berror($bid, "get_admin_user_info: " . $result);
+      bjoberror($bid, %info['jid'], "get_admin_user_info: " . $result);
+      return;
+   }
+
+   # Skip registered and complete events
+   if ("job_registered" eq %info["type"] || "job_completed" eq %info["type"]) {
       return;
    }
 

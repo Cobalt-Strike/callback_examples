@@ -8,17 +8,24 @@
 #
 sub coffee_cb {
    # Declare local variables
-   local('$bid $result %info');
+   local('$bid $result %info $jid');
 
    # Assign parameters user friendly names
    ($bid, $result, %info) = @_;
+   $jid = %info['jid'];
    #println("**** coffee_cb for bmimikatz");
    #println("**** arg1 (bid): $bid");
    #println("**** arg2 (rest of output):\n$result");
    #println("**** arg3 (info): " . %info);
 
-   # Log the output back to beacon console using the alt method
-   blog($bid, "received output:\n" . $result . "\nThank you, that is very tasty\n");
+   # Process only output and error events
+   if ("output" eq %info["type"]) {
+      # Log the output back to beacon console using the alt method
+      bjoblog($bid, $jid, "received output:\n" . $result . "\nThank you, that is very tasty\n");
+   }
+   else if ("error" eq %info["type"]) {
+      bjoberror($bid, $jid, $result);
+   }
 
    #println("**** coffee_sub_callback_cb done");
 }

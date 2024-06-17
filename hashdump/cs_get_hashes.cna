@@ -7,14 +7,20 @@
 #
 sub format_hashes {
    # Declare local variables
-   local('$bid $result %info $pattern $output @lines $line $user $hash');
+   local('$bid $result %info $pattern $output @lines $line $user $hash $jid');
 
    # Assign parameters user friendly names
    ($bid, $result, %info) = @_;
+   $jid = %info['jid'];
    #println("**** format_hashes for get_hashes");
    #println("**** arg1 (bid): $bid");
    #println("**** arg2 (result):\n$result");
    #println("**** arg3 (info): " . %info);
+
+   # Skip registered and complete events
+   if ("job_registered" eq %info["type"] || "job_completed" eq %info["type"]) {
+      return;
+   }
 
    # Find the user and hash information
    $pattern = '(.*?):\d+:.*?:(.*?):::';
@@ -32,7 +38,7 @@ sub format_hashes {
 
 
    # Log the output back to beacon console
-   blog($1, "received output:\n" . $output);
+   bjoblog($1, $jid, "received output:\n" . $output);
 
    #println("**** format_hashes done");
 }

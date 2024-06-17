@@ -20,8 +20,13 @@ sub get_domain_cb {
    #println("**** arg3 (info): " . %info);
    #println("**** arg4 (opts): " . %opts);
 
+   # Skip registered and complete events
+   if ("job_registered" eq %info["type"] || "job_completed" eq %info["type"]) {
+      return;
+   }
+
    # Log the output back to beacon console
-   blog($bid, "received output:\n" . "get_domain_cb " . $result);
+   bjoblog($bid, %info['jid'], "received output:\n" . "get_domain_cb " . $result);
 
    #println("**** get_domain_cb done");
 }
@@ -108,6 +113,6 @@ alias cs_get_domain {
 
    # Use the lambda function in order to pass local variables via Pass by Name to the callback
    bnet($bid, "domain", %opts["--target"], $null, %opts["--pid"], %opts["--arch"],
-      lambda({ get_domain_cb($1, $2, $3 %opts); }, \$opts));
+      lambda({ get_domain_cb($1, $2, $3 %opts); }, \%opts));
 }
 

@@ -16,7 +16,7 @@ $portscan_lock = semaphore(1); # set lock to released state.
 #
 sub add_portscan_info {
    # Declare local variables
-   local('$bid $added, %$portscan_info');
+   local('$bid $added %$portscan_info');
 
    # Assign parameters user friendly names
    ($bid) = @_;
@@ -83,14 +83,20 @@ alias cs_portscan_clear {
 #
 sub portscan_cb {
    # Declare local variables
-   local('$bid $result %info @lines $line $save $completed');
+   local('$bid $result %info @lines $line $save $completed $jid');
 
    # Assign parameters user friendly names
    ($bid, $result, %info) = @_;
+   $jid = %info['jid'];
    #println("**** portscan_cb");
    #println("**** arg1 (bid): $bid");
    #print("**** arg2 (result): $result");
    #println("**** arg3 (info): " . %info);
+
+   # Skip registered and complete events
+   if ("job_registered" eq %info["type"] || "job_completed" eq %info["type"]) {
+      return;
+   }
 
    # Process the result and save the info
    $save = "";
@@ -110,7 +116,7 @@ sub portscan_cb {
 
    # Report the results back when the portscan is completed.
    if ($completed) {
-      blog($bid, "received output:\n" .
+      bjoblog($bid, $jid, "received output:\n" .
          %portscan_info[$bid]["header"] . "\n" .
          %portscan_info[$bid]["result"]);
       remove_portscan_info($bid);

@@ -19,13 +19,19 @@ sub save_output {
    #println("**** arg3 (info): " . %info);
    #println("**** arg4 (opts): " . %opts);
 
-   # Save the result to the specified file
-   $handle = openf(">" . %opts["--file"]);
-   println($handle, $result);
-   closef($handle);
+   # Process only output and error events
+   if ("output" eq %info["type"]) {
+      # Save the result to the specified file
+      $handle = openf(">" . %opts["--file"]);
+      println($handle, $result);
+      closef($handle);
 
-   # Log that the output has been saved to the beacon console using the alt method
-   blog2($bid, "Output from " . %opts["--command"] . " is saved at " . %opts["--file"] . "\n");
+      # Log that the output has been saved to the beacon console using the alt method
+      blog2($bid, "Output from " . %opts["--command"] . " is saved at " . %opts["--file"] . "\n");
+   }
+   else if ("error" eq %info["type"]) {
+      bjoberror($bid, %info['jid'], $result);
+   }
 
    #println("**** save_output done");
 }
