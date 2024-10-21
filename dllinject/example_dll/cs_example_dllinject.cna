@@ -27,19 +27,19 @@ sub example_dllinject_cb {
    # Process only output and error events
    if ("output" eq %info["type"]) {
        # Do what ever processing needed on $result
-       @lines = split('\n', $2);
+       @lines = split('\n', $result);
        foreach $line (@lines) {
           #println("**** line: '" . $line . "'");
           if ("d:" eq substr($line, 0, 2)) {
              $name = substr($line, 2);
-             bjoblog($1, $jid, "received output:\n" . $name . ", It is nice to meet you\n");
+             bjoblog($bid, $jid, "received output:\n" . $name . ", It is nice to meet you\n");
           }
           else if ("done" eq $line) {
-             bjoblog($1, $jid, "received output:\ngoodbye everyone\n");
+             bjoblog($bid, $jid, "received output:\ngoodbye everyone\n");
           }
           else {
              # Log the output back to beacon console
-             bjoblog($1, $jid, "received output:\n" . $line . "\n");
+             bjoblog($bid, $jid, "received output:\n" . $line . "\n");
           }
        }
    }
