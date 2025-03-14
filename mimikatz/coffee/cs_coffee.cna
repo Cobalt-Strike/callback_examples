@@ -50,7 +50,9 @@ beacon_command_register(
    "   cs_coffee\n\n" .
 
    "Examples (process injection):\n" .
-   "   cs_coffee --pid 1234 --arch x64\n\n"
+   "   cs_coffee --pid 1234 --arch x64\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_coffee {

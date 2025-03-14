@@ -108,7 +108,9 @@ beacon_command_register(
    "   cs_export_certificates\n\n" .
 
    "Examples (process injection):\n" .
-   "   cs_export_certificates --pid 1234 --arch x64\n\n"
+   "   cs_export_certificates --pid 1234 --arch x64\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_export_certificates {

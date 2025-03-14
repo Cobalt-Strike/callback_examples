@@ -69,7 +69,9 @@ beacon_command_register(
 
    "Examples (process injection):\n" .
    "   cs_get_hashes --pid 1234 --arch x64\n".
-   "   cs_get_hashes --pid 1234 --arch x64 --format no\n\n"
+   "   cs_get_hashes --pid 1234 --arch x64 --format no\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_get_hashes {

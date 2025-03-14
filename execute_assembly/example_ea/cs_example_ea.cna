@@ -67,7 +67,9 @@ beacon_command_register(
 
    "Examples:\n" .
    "   cs_example_ea --args \"Han Luke Leia\"\n" .
-   "   cs_example_ea --args \"Han Luke Leia\" --patches \"PATCHES: ntdll.dll,EtwEventWrite,0,C21400 ntdll.dll,EtwLogTraceEvent,0,C21400\"\n\n"
+   "   cs_example_ea --args \"Han Luke Leia\" --patches \"PATCHES: ntdll.dll,EtwEventWrite,0,C21400 ntdll.dll,EtwLogTraceEvent,0,C21400\"\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_example_ea {

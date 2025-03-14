@@ -9,7 +9,10 @@ beacon_command_register(
    "   cs_powershell_clear\n\n" .
 
    "Arguments:\n" .
-   "   \$1 - beacon id (CS automatically adds this argument)\n\n");
+   "   \$1 - beacon id (CS automatically adds this argument)\n\n",
+
+   "cs_callback_examples"
+);
 
 alias cs_powershell_clear {
    bpowershell_import_clear($1);

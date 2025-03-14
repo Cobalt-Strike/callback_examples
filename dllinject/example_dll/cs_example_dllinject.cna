@@ -68,7 +68,9 @@ beacon_command_register(
 
    "Examples:\n" .
    "   cs_example_dllinject --pid <pid> --arch <arch>\n" .
-   "   cs_example_dllinject --pid <pid> --arch <arch> --format no\n\n"
+   "   cs_example_dllinject --pid <pid> --arch <arch> --format no\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_example_dllinject {
