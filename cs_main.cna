@@ -63,6 +63,7 @@ sub script_resource {
    "bnet/cs_get_domain.cna",
    "bnet/cs_get_admin_user_info.cna",
    "bof/cs_bof_callback_test.cna",
+   "dllinject/example_dll/cs_example_dllinject.cna",
    "dllspawn/example_dll/cs_example_dll.cna",
    "execute_assembly/example_ea/cs_example_ea.cna",
    "hashdump/cs_get_hashes.cna",
