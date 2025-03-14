@@ -65,7 +65,9 @@ beacon_command_register(
    "Examples:\n" .
    "   cs_get_services_pick\n" .
    "   cs_get_services_pick --cradle \"\"\n" .
-   "   cs_get_services_pick --patches \"PATCHES: ntdll.dll,EtwEventWrite,0,C21400 ntdll.dll,EtwLogTraceEvent,0,C21400\"\n\n"
+   "   cs_get_services_pick --patches \"PATCHES: ntdll.dll,EtwEventWrite,0,C21400 ntdll.dll,EtwLogTraceEvent,0,C21400\"\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_get_services_pick {

@@ -60,7 +60,9 @@ beacon_command_register(
 
    "Examples (process injection):\n" .
    "   cs_logon_passwd_elevate --pid 1234 --arch x64\n".
-   "   cs_logon_passwd_elevate --pid 1234 --arch x64 --file /tmp/mkatz.password\n\n"
+   "   cs_logon_passwd_elevate --pid 1234 --arch x64 --file /tmp/mkatz.password\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_logon_passwd_elevate {

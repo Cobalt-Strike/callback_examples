@@ -55,7 +55,10 @@ beacon_command_register(
 
    "Examples (process injection):\n" .
    "  cs_get_domain --pid=1234 --arch=x64\n" .
-   "  cs_get_domain --pid=1234 --arch=x64 --target=sysA\n");
+   "  cs_get_domain --pid=1234 --arch=x64 --target=sysA\n",
+
+   "cs_callback_examples"
+);
 
 alias cs_get_domain {
    # Declare local variables

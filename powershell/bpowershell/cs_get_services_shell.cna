@@ -63,7 +63,9 @@ beacon_command_register(
 
    "Examples:\n" .
    "   cs_get_services_shell\n" .
-   "   cs_get_services_shell --cradle \"\"\n\n"
+   "   cs_get_services_shell --cradle \"\"\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_get_services_shell {

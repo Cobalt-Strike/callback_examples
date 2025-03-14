@@ -58,6 +58,8 @@ sub script_resource {
    }
 }
 
+beacon_command_group("cs_callback_examples", "Callback Examples", "This group contains examples of how to use a callback with supported aggressor script functions"); 
+
 # Define all of the scripts that should be loaded by the cs_main
 @scripts = @(
    "bnet/cs_get_domain.cna",
