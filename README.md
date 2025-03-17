@@ -16,6 +16,23 @@ the following Aggressor Script functions:
 - bpowershell
 - bpsinject
 
+With the Cobalt Strike release 4.11 support for using callbacks were added to
+the following Aggressor Script function:
+- beacon_job_register
+
+With the 4.10 release the beacon_execute_postex_job aggressor function was
+introduced to support the ability to send and receive information from a
+user defined post exploitiation dll which proivdes a huge amount of flexibility.
+However, there were a few commands and corresponding aggressor functions which
+did not support receiving output such as dllinject, dllload, execute, shinject,
+and shspawn.  So, if you had a custom DLL, Executable, or Shell code and used
+one of these functions to execute them on a target then no output could be
+recieved.  By adding support for the beacon_job_register aggressor function
+those functions can now receive output from a named pipe.  An example of using
+the beacon_job_register function can be found in the dllinject folder.
+
+# Project Information
+
 In this public project there are examples for each of these functions.  These
 are simple examples which are meant to give users a jump start on how a
 callback function can be useful for your red team operations.

@@ -53,7 +53,9 @@ beacon_command_register(
    "   --arch <arch>     - arch of the pid to inject into\n\n" .
 
    "Examples:\n" .
-   "   cs_get_services_inject --pid 1234 --arch x64\n\n"
+   "   cs_get_services_inject --pid 1234 --arch x64\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_get_services_inject {

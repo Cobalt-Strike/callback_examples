@@ -1,0 +1,147 @@
+# Declare global variables
+global('$cs_example_dllinject_base_dir');
+
+# Set the base folder for the "cs_example_dllinject" script
+$cs_example_dllinject_base_dir = script_resource("");
+
+
+# Process the result from the example_dllinject.dll and format the output.
+#
+# Arguments
+# $1 - beacon id
+# $2 - result
+# $3 - info - Map containing information about the result
+#
+sub example_dllinject_cb {
+   # Declare local variables
+   local('$bid $result %info @lines $line $name $jid');
+
+   # Assign parameters user friendly names
+   ($bid, $result, %info) = @_;
+   $jid = %info['jid'];
+   #println("**** example_dllinject_cb");
+   #println("**** arg1 (bid): $bid");
+   #println("**** arg2 (result): $result");
+   #println("**** arg3 (info): " . %info);
+
+   # Process only output and error events
+   if ("output" eq %info["type"]) {
+       # Do what ever processing needed on $result
+       @lines = split('\n', $result);
+       foreach $line (@lines) {
+          #println("**** line: '" . $line . "'");
+          if ("d:" eq substr($line, 0, 2)) {
+             $name = substr($line, 2);
+             bjoblog($bid, $jid, "received output:\n" . $name . ", It is nice to meet you\n");
+          }
+          else if ("done" eq $line) {
+             bjoblog($bid, $jid, "received output:\ngoodbye everyone\n");
+          }
+          else {
+             # Log the output back to beacon console
+             bjoblog($bid, $jid, "received output:\n" . $line . "\n");
+          }
+       }
+   }
+   else if ("error" eq %info["type"]) {
+      bjoberror($bid, $jid, $result);
+   }
+   #println("**** example_dllinject_cb done");
+}
+
+beacon_command_register(
+   "cs_example_dllinject",
+   "Inject the example_dll into a process",
+
+   "Inject the example_dll into a process\n\n" .
+
+   "Usage:\n" .
+   "   cs_example_dllinject [options]\n\n" .
+
+   "Arguments:\n" .
+   "   \$1 - beacon id (CS automatically adds this argument)\n" .
+   "   --pid=<pid>       - pid to inject into\n" .
+   "   --arch=<arch>     - arch of the pid to inject into\n\n" .
+
+   "Options (specified in any order):\n" .
+   "   --format [yes|no]   - do additional formatting of output. Default is yes\n\n" .
+
+   "Examples:\n" .
+   "   cs_example_dllinject --pid <pid> --arch <arch>\n" .
+   "   cs_example_dllinject --pid <pid> --arch <arch> --format no\n\n",
+
+   "cs_callback_examples"
+);
+
+alias cs_example_dllinject {
+   # Declare local variables
+   local('$bid @valid_opts %opts $opt_cnt $opt_ind $opt $value $info');
+
+   # Set the defaults
+   %opts["--format"] = "yes";
+
+   # Assign parameters to the opts hash map
+   $bid = @_[0];
+   $opt_cnt = size(@_);
+   @valid_opts = @("--pid", "--arch", "--format");
+   for($opt_ind = 1; $opt_ind < $opt_cnt; $opt_ind++) {
+      # Set the arg and value for this iteration
+      $opt = @_[$opt_ind];
+      $opt_ind++;
+      $value = iff( $opt_ind >= $opt_cnt, $null, @_[$opt_ind] );
+
+      # Do some simple validation on opt and value
+      if ($opt !in @valid_opts) {
+         berror($bid, "$opt is not a valid option.");
+         return;
+      }
+      if ($value is $null || $value in @valid_opts) {
+         berror($bid, "Missing or invalid value for the $opt option.");
+         return;
+      }
+
+      # Save the opt and value into the opts hash
+      %opts[$opt] = $value;
+   }
+
+   # Validate options
+   if ( (%opts["--pid"] is $null) || (%opts["--arch"] is $null) ) {
+      berror($bid, "One of the required options are not set, must specify the --pid and --arch options.");
+      return;
+   }
+   if (!-isnumber %opts["--pid"] || %opts["--pid"] < 0) {
+      berror($bid, "pid is not a valid: " . %opts["--pid"]);
+      return;
+   }
+   if (%opts["--arch"] !in @("x86", "x64")) {
+      berror($bid, "arch is not valid, must be x86 or x64.");
+      return;
+   }
+   if (%opts["--format"] !in @("yes", "no")) {
+      berror($bid, "format option is not valid: " . %opts["--format"]);
+      return;
+   }
+
+   # Figure out which version of the dll to use
+   %opts["--dll"] = script_resource("example_dllinject." . %opts["--arch"] . ".dll", $cs_example_dllinject_base_dir);
+
+   # Build the info message
+   $info = "beacon: $bid will inject into process: \(\'" . %opts["--pid"] . "\' \'" . %opts["--arch"] . "\'\)";
+   println("$info");
+
+   # Note: In this example the pipename and arguments are hardcoded in the example_dllinject.c file
+   #       It is possible utilize Aggressor Script to "stomp" information into the DLL but that is
+   #       left as an exercise for the user to implement.  You would want to modify the DLL prior
+   #       to executing the command.
+
+   # Execute the command
+   bdllinject($bid, %opts["--pid"], %opts["--dll"]);
+
+   # Register job to read from pipe
+   if (%opts["--format"] eq "yes") {
+      bread_pipe(@($bid), "ANONYMOUS_BYTESTREAM", "CALLBACK_OUTPUT", "test pipe", "\\\\.\\pipe\\mynamedpipe", %opts["--pid"], 15000, &example_dllinject_cb);
+   } else {
+      bread_pipe(@($bid), "ANONYMOUS_BYTESTREAM", "CALLBACK_OUTPUT", "test pipe", "\\\\.\\pipe\\mynamedpipe", %opts["--pid"], 15000, $null);
+   }
+}
+

@@ -64,7 +64,9 @@ beacon_command_register(
    "Usage:\n" .
    "   cs_portscan_clear\n\n" .
 
-   "This is useful if there is an issue with the previous cs_portscan job\n\n"
+   "This is useful if there is an issue with the previous cs_portscan job\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_portscan_clear {
@@ -149,7 +151,9 @@ beacon_command_register(
 
    "Examples (process injection):\n" .
    "   cs_portscan --pid 1234 --arch x64\n" .
-   "   cs_portscan --pid 1234 --arch x64 --targets sysA --ports 2000-3000\n\n"
+   "   cs_portscan --pid 1234 --arch x64 --targets sysA --ports 2000-3000\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_portscan {

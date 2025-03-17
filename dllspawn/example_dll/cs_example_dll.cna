@@ -65,7 +65,9 @@ beacon_command_register(
 
    "Examples:\n" .
    "   cs_example_dll --args \"Han Luke Leia\"\n" .
-   "   cs_example_dll --args \"Han Luke Leia\" --format no\n\n"
+   "   cs_example_dll --args \"Han Luke Leia\" --format no\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_example_dll {

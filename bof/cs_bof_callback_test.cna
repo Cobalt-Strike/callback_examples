@@ -124,7 +124,9 @@ beacon_command_register(
    "Examples:\n" .
    "   cs_bof_callback_test\n" .
    "   cs_bof_callback_test --use beacon_inline_execute --test 1\n" .
-   "   cs_bof_callback_test --use binline_execute --test 6\n\n"
+   "   cs_bof_callback_test --use binline_execute --test 6\n\n",
+
+   "cs_callback_examples"
 );
 
 alias cs_bof_callback_test {
